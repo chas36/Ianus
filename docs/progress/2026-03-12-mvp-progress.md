@@ -118,3 +118,15 @@ Implemented mitigation in API:
 
 - Vite dev server starts on `http://127.0.0.1:5173`.
 - Root HTML response received successfully.
+
+---
+
+## UI Iteration (2026-03-12)
+
+- Frontend timetable grid orientation changed:
+  - Y-axis: weekdays
+  - X-axis: periods and time
+- Improved readability and status visibility:
+  - selected mode/entity line in header
+  - compact info chips in content header
+  - improved cell/card styling for dense timetable view

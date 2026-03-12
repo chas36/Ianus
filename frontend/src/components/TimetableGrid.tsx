@@ -55,34 +55,53 @@ export default function TimetableGrid({ timetable, loading, error }: TimetableGr
     return <section className="grid-empty">Выберите класс, учителя или кабинет</section>
   }
 
+  const periods = [...timetable.rows]
+    .sort((a, b) => a.period - b.period)
+    .map((row) => ({ period: row.period, time: row.time }))
+
+  const rowsByPeriod = new Map(timetable.rows.map((row) => [row.period, row]))
+
   return (
     <section className="grid-wrap">
       <div className="grid-title-row">
         <h2>{timetable.entity_name}</h2>
+        <p>Ось X: уроки и время, ось Y: дни недели</p>
       </div>
 
       <div className="grid-scroll">
         <table className="timetable-grid">
           <thead>
             <tr>
-              <th>Урок</th>
-              {DAYS.map((day) => (
-                <th key={day}>{DAY_NAMES[day]}</th>
+              <th className="day-stub">День / Урок</th>
+              {periods.map((periodItem) => (
+                <th key={periodItem.period} className="period-header-cell">
+                  <span>{periodItem.period}</span>
+                  <small>{periodItem.time}</small>
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {timetable.rows.map((row) => (
-              <tr key={row.period}>
-                <td className="period-cell">
-                  <strong>{row.period}</strong>
-                  <small>{row.time}</small>
-                </td>
-                {DAYS.map((day) => {
-                  const entries = row.days[day] ?? []
+            {DAYS.map((day) => (
+              <tr key={day}>
+                <th className="day-cell" scope="row">
+                  {DAY_NAMES[day]}
+                </th>
+                {periods.map((periodItem) => {
+                  const periodRow = rowsByPeriod.get(periodItem.period)
+                  const entries = periodRow?.days[day] ?? []
                   const hasSplit = entries.length > 1
+
+                  if (entries.length === 0) {
+                    return (
+                      <td key={`${day}-${periodItem.period}`}>
+                        <div className="empty-cell-mark">—</div>
+                      </td>
+                    )
+                  }
+
                   return (
-                    <td key={`${row.period}-${day}`}>
+                    <td key={`${day}-${periodItem.period}`}>
                       {entries.map((entry, index) => renderCell(entry, index, hasSplit))}
                     </td>
                   )

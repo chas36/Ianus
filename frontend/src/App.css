@@ -168,7 +168,7 @@
 .content-headline {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
 }
 
@@ -186,10 +186,26 @@
   line-height: 1.2;
 }
 
-.content-meta {
+.content-subtitle {
+  margin: 8px 0 0;
   color: var(--text-muted);
-  font-size: 0.86rem;
-  padding-top: 4px;
+  font-size: 0.9rem;
+}
+
+.content-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.chip {
+  border: 1px solid var(--line-soft);
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
 }
 
 .grid-wrap {
@@ -204,6 +220,12 @@
   font-size: 1.15rem;
 }
 
+.grid-title-row p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
 .grid-scroll {
   overflow: auto;
   border: 1px solid var(--line-soft);
@@ -213,14 +235,14 @@
 .timetable-grid {
   width: 100%;
   border-collapse: collapse;
-  min-width: 900px;
+  min-width: 1450px;
 }
 
 .timetable-grid th,
 .timetable-grid td {
   border: 1px solid var(--line-soft);
   vertical-align: top;
-  padding: 6px;
+  padding: 8px;
 }
 
 .timetable-grid thead th {
@@ -228,21 +250,53 @@
   text-align: center;
 }
 
-.period-cell {
-  width: 95px;
+.timetable-grid tbody td {
+  min-width: 130px;
+  background: rgb(255 255 255 / 55%);
+}
+
+.day-stub,
+.day-cell {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 150px;
+  width: 150px;
+}
+
+.day-stub {
+  z-index: 2;
+}
+
+.day-cell {
+  background: #f4ecdf;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.period-header-cell {
+  min-width: 130px;
+  width: 130px;
   text-align: center;
 }
 
-.period-cell small {
+.period-header-cell span {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.period-header-cell small {
   display: block;
   color: var(--text-muted);
   margin-top: 4px;
+  font-weight: 500;
 }
 
 .lesson-card {
   border-radius: 10px;
-  padding: 6px;
+  padding: 7px;
   border: 1px solid rgb(0 0 0 / 8%);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 6%);
 }
 
 .lesson-card.split {
@@ -266,6 +320,13 @@
   font-size: 0.78rem;
   color: var(--text-muted);
   font-style: italic;
+}
+
+.empty-cell-mark {
+  color: #aaa28f;
+  text-align: center;
+  font-size: 0.95rem;
+  padding-top: 6px;
 }
 
 .grid-empty {
@@ -332,5 +393,20 @@
   .app-main {
     grid-template-columns: 1fr;
     grid-template-rows: 260px 1fr;
+  }
+
+  .content-headline {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .content-chips {
+    justify-content: flex-start;
+  }
+
+  .day-stub,
+  .day-cell {
+    min-width: 125px;
+    width: 125px;
   }
 }

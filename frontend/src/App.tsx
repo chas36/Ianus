@@ -8,6 +8,12 @@ import TopBar from './components/TopBar'
 import type { ClassItem, RoomItem, TeacherItem, TimetableResponse, ViewMode } from './types'
 import './App.css'
 
+const MODE_LABELS: Record<ViewMode, string> = {
+  class: 'Классы',
+  teacher: 'Учителя',
+  room: 'Кабинеты',
+}
+
 export default function App() {
   const [mode, setMode] = useState<ViewMode>('class')
   const [selectedId, setSelectedId] = useState<number | null>(null)
@@ -91,6 +97,20 @@ export default function App() {
     return rooms.length
   }, [classes.length, mode, rooms.length, teachers.length])
 
+  const selectedName = useMemo(() => {
+    if (selectedId == null) {
+      return 'не выбрано'
+    }
+
+    if (timetable?.entity_name) {
+      return timetable.entity_name
+    }
+
+    const items = mode === 'class' ? classes : mode === 'teacher' ? teachers : rooms
+    const selected = items.find((item) => item.id === selectedId)
+    return selected?.name ?? 'не выбрано'
+  }, [classes, mode, rooms, selectedId, teachers, timetable?.entity_name])
+
   return (
     <div className="app-shell">
       <TopBar
@@ -116,9 +136,15 @@ export default function App() {
             <div>
               <span className="content-kicker">Ianus MVP</span>
               <h1>Школьное расписание</h1>
+              <p className="content-subtitle">
+                Режим: {MODE_LABELS[mode]} · Выбрано: {selectedName}
+              </p>
             </div>
-            <div className="content-meta">
-              <span>{loadingLists ? 'Обновление справочников...' : `Элементов: ${sidebarCount}`}</span>
+            <div className="content-chips">
+              <span className="chip">
+                {loadingLists ? 'Обновление справочников...' : `Элементов: ${sidebarCount}`}
+              </span>
+              <span className="chip">Оси: дни x уроки</span>
             </div>
           </div>
 
