@@ -3,9 +3,11 @@ import type { ViewMode } from '../types'
 interface TopBarProps {
   mode: ViewMode
   selectedId: number | null
+  currentUsername: string
   onModeChange: (mode: ViewMode) => void
   onImportClick: () => void
   onExport: (format: 'xlsx' | 'pdf') => void
+  onLogout: () => void
 }
 
 const MODES: Array<{ key: ViewMode; label: string }> = [
@@ -17,9 +19,11 @@ const MODES: Array<{ key: ViewMode; label: string }> = [
 export default function TopBar({
   mode,
   selectedId,
+  currentUsername,
   onModeChange,
   onImportClick,
   onExport,
+  onLogout,
 }: TopBarProps) {
   return (
     <header className="topbar">
@@ -37,6 +41,7 @@ export default function TopBar({
       </div>
 
       <div className="topbar-actions">
+        <span className="topbar-user">{currentUsername}</span>
         <button type="button" className="btn ghost" onClick={onImportClick}>
           Импорт XML
         </button>
@@ -47,6 +52,13 @@ export default function TopBar({
           onClick={() => onExport('xlsx')}
         >
           Excel
+        </button>
+        <button
+          type="button"
+          className="btn ghost"
+          onClick={onLogout}
+        >
+          Выйти
         </button>
         <button
           type="button"

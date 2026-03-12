@@ -7,9 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models import Card, Import, Lesson, Room, SchoolClass, Subject, Teacher
 from app.schemas import ImportResponse
+from app.security import get_current_user
 from app.services.asc_xml_parser import parse_asc_xml
 
-router = APIRouter(prefix="/api/import", tags=["import"])
+router = APIRouter(
+    prefix="/api/import",
+    tags=["import"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 @router.post("/asc-xml", response_model=ImportResponse)

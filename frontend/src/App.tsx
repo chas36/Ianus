@@ -1,11 +1,32 @@
+import { AxiosError, isAxiosError } from 'axios'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { getClasses, getExportUrl, getRooms, getTeachers, getTimetable } from './api'
+import {
+  bootstrapAdmin,
+  clearStoredToken,
+  exportTimetable,
+  getBootstrapRequired,
+  getClasses,
+  getMe,
+  getRooms,
+  getTeachers,
+  getTimetable,
+  login,
+  setStoredToken,
+} from './api'
+import AuthPanel from './components/AuthPanel'
 import ImportDialog from './components/ImportDialog'
 import Sidebar from './components/Sidebar'
 import TimetableGrid from './components/TimetableGrid'
 import TopBar from './components/TopBar'
-import type { ClassItem, RoomItem, TeacherItem, TimetableResponse, ViewMode } from './types'
+import type {
+  AuthMeResponse,
+  ClassItem,
+  RoomItem,
+  TeacherItem,
+  TimetableResponse,
+  ViewMode,
+} from './types'
 import './App.css'
 
 const MODE_LABELS: Record<ViewMode, string> = {
@@ -28,7 +49,16 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [importOpen, setImportOpen] = useState(false)
 
+  const [authLoading, setAuthLoading] = useState(true)
+  const [authError, setAuthError] = useState<string | null>(null)
+  const [bootstrapRequired, setBootstrapRequired] = useState(false)
+  const [currentUser, setCurrentUser] = useState<AuthMeResponse | null>(null)
+
   const loadLists = useCallback(async () => {
+    if (!currentUser) {
+      return
+    }
+
     setLoadingLists(true)
     setError(null)
     try {
@@ -45,11 +75,44 @@ export default function App() {
     } finally {
       setLoadingLists(false)
     }
+  }, [currentUser])
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      setAuthLoading(true)
+      setAuthError(null)
+      try {
+        const bootstrapState = await getBootstrapRequired()
+        setBootstrapRequired(bootstrapState.required)
+
+        if (bootstrapState.required) {
+          setCurrentUser(null)
+          return
+        }
+
+        const me = await getMe()
+        setCurrentUser(me)
+      } catch (err: unknown) {
+        if (isAxiosError(err) && err.response?.status === 401) {
+          clearStoredToken()
+          setCurrentUser(null)
+        } else {
+          setAuthError('Ошибка проверки авторизации. Проверьте backend.')
+        }
+      } finally {
+        setAuthLoading(false)
+      }
+    }
+
+    void initializeAuth()
   }, [])
 
   useEffect(() => {
+    if (!currentUser) {
+      return
+    }
     void loadLists()
-  }, [loadLists])
+  }, [currentUser, loadLists])
 
   useEffect(() => {
     setSelectedId(null)
@@ -58,6 +121,10 @@ export default function App() {
   }, [mode])
 
   useEffect(() => {
+    if (!currentUser) {
+      return
+    }
+
     if (selectedId == null) {
       setTimetable(null)
       setLoadingTimetable(false)
@@ -78,13 +145,62 @@ export default function App() {
     }
 
     void run()
-  }, [mode, selectedId])
+  }, [currentUser, mode, selectedId])
 
-  const handleExport = (format: 'xlsx' | 'pdf') => {
+  const handleAuth = async (username: string, password: string, bootstrap: boolean) => {
+    setAuthError(null)
+    setAuthLoading(true)
+    try {
+      if (bootstrap) {
+        await bootstrapAdmin({ username, password })
+        setBootstrapRequired(false)
+      }
+
+      const response = await login({ username, password })
+      setStoredToken(response.access_token)
+      const me = await getMe()
+      setCurrentUser(me)
+    } catch (err: unknown) {
+      const message =
+        isAxiosError(err) && typeof err.response?.data?.detail === 'string'
+          ? err.response.data.detail
+          : 'Не удалось выполнить вход'
+      setAuthError(message)
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  const handleLogout = () => {
+    clearStoredToken()
+    setCurrentUser(null)
+    setClasses([])
+    setTeachers([])
+    setRooms([])
+    setSelectedId(null)
+    setTimetable(null)
+  }
+
+  const handleExport = async (format: 'xlsx' | 'pdf') => {
     if (selectedId == null) {
       return
     }
-    window.open(getExportUrl(mode, selectedId, format), '_blank', 'noopener,noreferrer')
+
+    try {
+      const { blob, filename } = await exportTimetable(mode, selectedId, format)
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = filename
+      anchor.click()
+      URL.revokeObjectURL(url)
+    } catch (err: unknown) {
+      if (err instanceof AxiosError && err.response?.status === 503) {
+        setError('PDF недоступен: не установлены системные библиотеки WeasyPrint')
+        return
+      }
+      setError('Не удалось выполнить экспорт файла')
+    }
   }
 
   const sidebarCount = useMemo(() => {
@@ -111,14 +227,38 @@ export default function App() {
     return selected?.name ?? 'не выбрано'
   }, [classes, mode, rooms, selectedId, teachers, timetable?.entity_name])
 
+  if (authLoading && !currentUser) {
+    return (
+      <div className="app-shell">
+        <section className="grid-empty">Проверка доступа...</section>
+      </div>
+    )
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="app-shell">
+        <AuthPanel
+          bootstrapRequired={bootstrapRequired}
+          loading={authLoading}
+          error={authError}
+          onBootstrap={async (username, password) => handleAuth(username, password, true)}
+          onLogin={async (username, password) => handleAuth(username, password, false)}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="app-shell">
       <TopBar
         mode={mode}
         selectedId={selectedId}
+        currentUsername={`${currentUser.username} (${currentUser.role})`}
         onModeChange={setMode}
         onImportClick={() => setImportOpen(true)}
-        onExport={handleExport}
+        onExport={(format) => void handleExport(format)}
+        onLogout={handleLogout}
       />
 
       <main className="app-main">
@@ -134,7 +274,7 @@ export default function App() {
         <div className="content-area">
           <div className="content-headline">
             <div>
-              <span className="content-kicker">Ianus MVP</span>
+              <span className="content-kicker">Ianus Phase 2</span>
               <h1>Школьное расписание</h1>
               <p className="content-subtitle">
                 Режим: {MODE_LABELS[mode]} · Выбрано: {selectedName}

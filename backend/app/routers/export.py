@@ -11,9 +11,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.routers.timetable import timetable_by_class, timetable_by_room, timetable_by_teacher
 from app.schemas import TimetableResponse
+from app.security import get_current_user
 from app.services.export_service import timetable_to_pdf_html, timetable_to_xlsx
 
-router = APIRouter(prefix="/api/export", tags=["export"])
+router = APIRouter(
+    prefix="/api/export",
+    tags=["export"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 def _prepare_weasyprint_runtime() -> None:

@@ -143,3 +143,50 @@ Implemented mitigation in API:
   - PDF: `200` (`18081` bytes)
 
 Result: Task 9 fully validated in runtime (both formats).
+
+---
+
+## Phase 2 Kickoff: Auth + Roles Foundation (2026-03-12)
+
+### Backend
+
+- Added `users` model and migration:
+  - `backend/app/models.py`
+  - `backend/alembic/versions/20260312_0002_add_users_table.py`
+- Added JWT/password security module:
+  - `backend/app/security.py`
+- Added auth API:
+  - `GET /api/auth/bootstrap-required`
+  - `POST /api/auth/bootstrap`
+  - `POST /api/auth/login`
+  - `GET /api/auth/me`
+- Protected timetable/import/export APIs with auth dependency.
+- Updated CORS for both `localhost:5173` and `127.0.0.1:5173`.
+
+### Frontend
+
+- Added auth types and API client methods for bootstrap/login/me.
+- Added token storage and request interceptor for `Authorization: Bearer ...`.
+- Added login/bootstrap UI component: `frontend/src/components/AuthPanel.tsx`.
+- Updated app flow:
+  - checks bootstrap state,
+  - shows auth screen when not logged in,
+  - loads data only for authenticated user,
+  - supports logout.
+- Switched export from `window.open` to authenticated blob download via API.
+
+### Validation
+
+- Alembic upgrade applied: `20260312_0002`.
+- Auth smoke:
+  - bootstrap-required -> `true` (fresh users table)
+  - unauthenticated `/api/classes` -> `401`
+  - bootstrap admin -> `200`
+  - login -> token returned
+  - `/api/auth/me` -> `200`
+  - authenticated `/api/classes` -> `200`
+- Backend checks:
+  - `python -m compileall backend/app` passed
+  - `pytest tests/test_asc_xml_parser.py` -> `9 passed`
+- Frontend check:
+  - `npm run build` passed

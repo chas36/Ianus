@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class SubjectOut(BaseModel):
@@ -62,3 +62,31 @@ class ImportResponse(BaseModel):
     rooms: int
     lessons: int
     cards: int
+
+
+class AuthBootstrapRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=120)
+    password: str = Field(min_length=8, max_length=120)
+
+
+class AuthBootstrapResponse(BaseModel):
+    id: int
+    username: str
+    role: str
+
+
+class AuthLoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class AuthLoginResponse(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class AuthMeResponse(BaseModel):
+    id: int
+    username: str
+    role: str
+    is_active: bool

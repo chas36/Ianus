@@ -45,4 +45,36 @@ export interface ImportResponse {
   cards: number
 }
 
+export interface AuthBootstrapRequiredResponse {
+  required: boolean
+}
+
+export interface AuthBootstrapRequest {
+  username: string
+  password: string
+}
+
+export interface AuthBootstrapResponse {
+  id: number
+  username: string
+  role: string
+}
+
+export interface AuthLoginRequest {
+  username: string
+  password: string
+}
+
+export interface AuthLoginResponse {
+  access_token: string
+  token_type: string
+}
+
+export interface AuthMeResponse {
+  id: number
+  username: string
+  role: string
+  is_active: boolean
+}
+
 export type ViewMode = 'class' | 'teacher' | 'room'

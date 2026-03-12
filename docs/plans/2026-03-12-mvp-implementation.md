@@ -27,6 +27,13 @@
 - [x] Task 15: Frontend ImportDialog component
 - [x] Task 16: Frontend App wiring
 
+## Phase 2 Extension (Started: 2026-03-12)
+
+- [x] P2.1: JWT auth foundation (users table, bootstrap/login/me, protected API)
+- [ ] P2.2: Role separation (admin/teacher permissions)
+- [ ] P2.3: UI role-aware visibility and actions
+- [ ] P2.4: Audit trail for imports/exports and timetable access
+
 ---
 
 ## Task 1: Docker Compose + PostgreSQL

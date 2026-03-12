@@ -1,5 +1,12 @@
 import axios from 'axios'
+
 import type {
+  AuthBootstrapRequest,
+  AuthBootstrapRequiredResponse,
+  AuthBootstrapResponse,
+  AuthLoginRequest,
+  AuthLoginResponse,
+  AuthMeResponse,
   ClassItem,
   ImportResponse,
   RoomItem,
@@ -8,7 +15,49 @@ import type {
   ViewMode,
 } from '../types'
 
+const TOKEN_STORAGE_KEY = 'ianus_access_token'
+
 const api = axios.create({ baseURL: '/api' })
+
+api.interceptors.request.use((config) => {
+  const token = getStoredToken()
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+export function getStoredToken(): string | null {
+  return localStorage.getItem(TOKEN_STORAGE_KEY)
+}
+
+export function setStoredToken(token: string): void {
+  localStorage.setItem(TOKEN_STORAGE_KEY, token)
+}
+
+export function clearStoredToken(): void {
+  localStorage.removeItem(TOKEN_STORAGE_KEY)
+}
+
+export async function getBootstrapRequired(): Promise<AuthBootstrapRequiredResponse> {
+  const { data } = await api.get<AuthBootstrapRequiredResponse>('/auth/bootstrap-required')
+  return data
+}
+
+export async function bootstrapAdmin(payload: AuthBootstrapRequest): Promise<AuthBootstrapResponse> {
+  const { data } = await api.post<AuthBootstrapResponse>('/auth/bootstrap', payload)
+  return data
+}
+
+export async function login(payload: AuthLoginRequest): Promise<AuthLoginResponse> {
+  const { data } = await api.post<AuthLoginResponse>('/auth/login', payload)
+  return data
+}
+
+export async function getMe(): Promise<AuthMeResponse> {
+  const { data } = await api.get<AuthMeResponse>('/auth/me')
+  return data
+}
 
 export async function getClasses(): Promise<ClassItem[]> {
   const { data } = await api.get<ClassItem[]>('/classes')
@@ -37,6 +86,27 @@ export async function importXml(file: File): Promise<ImportResponse> {
   return data
 }
 
-export function getExportUrl(mode: ViewMode, id: number, format: 'xlsx' | 'pdf'): string {
-  return `/api/export/${mode}/${id}?format=${format}`
+export async function exportTimetable(
+  mode: ViewMode,
+  id: number,
+  format: 'xlsx' | 'pdf',
+): Promise<{ blob: Blob; filename: string }> {
+  const response = await api.get<Blob>(`/export/${mode}/${id}?format=${format}`, {
+    responseType: 'blob',
+  })
+
+  const disposition = response.headers['content-disposition']
+  const fallback = `${mode}_${id}.${format}`
+  const filename = parseFilename(disposition) ?? fallback
+
+  return { blob: response.data, filename }
+}
+
+function parseFilename(contentDisposition: string | undefined): string | null {
+  if (!contentDisposition) {
+    return null
+  }
+
+  const match = contentDisposition.match(/filename="?([^";]+)"?/i)
+  return match ? match[1] : null
 }

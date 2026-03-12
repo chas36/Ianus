@@ -18,8 +18,13 @@ from app.schemas import (
     TimetableResponse,
     TimetableRow,
 )
+from app.security import get_current_user
 
-router = APIRouter(prefix="/api", tags=["timetable"])
+router = APIRouter(
+    prefix="/api",
+    tags=["timetable"],
+    dependencies=[Depends(get_current_user)],
+)
 
 PERIOD_TIMES = {
     1: "8:30 - 9:15",
