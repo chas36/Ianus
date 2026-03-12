@@ -81,3 +81,40 @@
   - import XML,
   - open timetable for entity,
   - export XLSX/PDF.
+
+---
+
+## Runtime Smoke Test (2026-03-12)
+
+### Environment bring-up
+
+- Docker Desktop started successfully.
+- PostgreSQL started: `docker compose up -d db`
+- DB readiness check passed (`SELECT 1`).
+- Alembic migration applied online: `alembic upgrade head`.
+
+### API smoke results
+
+- `GET /api/health` -> `200`, body: `{"status":"ok"}`
+- `POST /api/import/asc-xml` with `export_file/import.xml` -> `200`, body:
+  `{"subjects":102,"teachers":71,"classes":51,"rooms":78,"lessons":679,"cards":1644}`
+- Entity lists:
+  - classes: 51
+  - teachers: 71
+  - rooms: 78
+- Timetable endpoints (`class/teacher/room`) return 10 rows with non-empty cells.
+
+### Export smoke results
+
+- `GET /api/export/class/{id}?format=xlsx` -> `200`, file generated (`6259` bytes)
+- `GET /api/export/class/{id}?format=pdf` -> `503`, reason:
+  missing WeasyPrint system dependencies in host environment (`pango/cairo/gobject`)
+
+Implemented mitigation in API:
+- XLSX works with ASCII-safe filenames in `Content-Disposition`.
+- PDF failure now returns explicit `503` with actionable detail instead of raw `500`.
+
+### Frontend smoke
+
+- Vite dev server starts on `http://127.0.0.1:5173`.
+- Root HTML response received successfully.

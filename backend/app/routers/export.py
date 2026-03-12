@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,7 +23,16 @@ async def _export(tt: TimetableResponse, fmt: Literal["xlsx", "pdf"], name: str)
             headers={"Content-Disposition": f'attachment; filename="{name}.xlsx"'},
         )
 
-    from weasyprint import HTML
+    try:
+        from weasyprint import HTML
+    except (ImportError, OSError) as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "PDF export is unavailable in current environment. "
+                "Install WeasyPrint system dependencies (pango/cairo/gobject)."
+            ),
+        ) from exc
 
     html = timetable_to_pdf_html(tt)
     pdf_bytes = HTML(string=html).write_pdf()
@@ -41,7 +50,7 @@ async def export_class(
     db: AsyncSession = Depends(get_db),
 ) -> Response:
     tt = await timetable_by_class(class_id, db)
-    return await _export(tt, format, f"class_{tt.entity_name}")
+    return await _export(tt, format, f"class_{class_id}")
 
 
 @router.get("/teacher/{teacher_id}")
@@ -51,7 +60,7 @@ async def export_teacher(
     db: AsyncSession = Depends(get_db),
 ) -> Response:
     tt = await timetable_by_teacher(teacher_id, db)
-    return await _export(tt, format, f"teacher_{tt.entity_name}")
+    return await _export(tt, format, f"teacher_{teacher_id}")
 
 
 @router.get("/room/{room_id}")
@@ -61,4 +70,4 @@ async def export_room(
     db: AsyncSession = Depends(get_db),
 ) -> Response:
     tt = await timetable_by_room(room_id, db)
-    return await _export(tt, format, f"room_{tt.entity_name}")
+    return await _export(tt, format, f"room_{room_id}")
