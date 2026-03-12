@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import sys
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -14,6 +16,23 @@ from app.services.export_service import timetable_to_pdf_html, timetable_to_xlsx
 router = APIRouter(prefix="/api/export", tags=["export"])
 
 
+def _prepare_weasyprint_runtime() -> None:
+    if sys.platform != "darwin":
+        return
+
+    homebrew_lib = "/opt/homebrew/lib"
+    if not os.path.isdir(homebrew_lib):
+        return
+
+    current = os.environ.get("DYLD_FALLBACK_LIBRARY_PATH", "")
+    if homebrew_lib in current.split(":"):
+        return
+
+    os.environ["DYLD_FALLBACK_LIBRARY_PATH"] = (
+        f"{current}:{homebrew_lib}".strip(":")
+    )
+
+
 async def _export(tt: TimetableResponse, fmt: Literal["xlsx", "pdf"], name: str) -> Response:
     if fmt == "xlsx":
         data = timetable_to_xlsx(tt)
@@ -24,6 +43,7 @@ async def _export(tt: TimetableResponse, fmt: Literal["xlsx", "pdf"], name: str)
         )
 
     try:
+        _prepare_weasyprint_runtime()
         from weasyprint import HTML
     except (ImportError, OSError) as exc:
         raise HTTPException(

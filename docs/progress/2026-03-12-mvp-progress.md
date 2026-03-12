@@ -130,3 +130,16 @@ Implemented mitigation in API:
   - selected mode/entity line in header
   - compact info chips in content header
   - improved cell/card styling for dense timetable view
+
+---
+
+## PDF Export Closure (2026-03-12)
+
+- Installed WeasyPrint host dependencies on macOS via Homebrew (`glib`, `pango`, `gdk-pixbuf`, `cairo`, `libffi`).
+- Added backend runtime preparation for WeasyPrint on macOS:
+  - sets `DYLD_FALLBACK_LIBRARY_PATH` to include `/opt/homebrew/lib` when available.
+- Re-ran export smoke:
+  - XLSX: `200` (`6259` bytes)
+  - PDF: `200` (`18081` bytes)
+
+Result: Task 9 fully validated in runtime (both formats).
