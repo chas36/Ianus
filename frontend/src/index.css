@@ -1,0 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=PT+Mono&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
+}
+
+code {
+  font-family: 'PT Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}

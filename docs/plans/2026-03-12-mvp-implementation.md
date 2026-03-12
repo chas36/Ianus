@@ -18,14 +18,14 @@
 - [x] Task 6: Pydantic schemas
 - [x] Task 7: Import API endpoint (implemented; DB runtime check pending)
 - [x] Task 8: Timetable API endpoints (implemented; DB runtime check pending)
-- [ ] Task 9: Export service (Excel + PDF)
-- [ ] Task 10: Frontend setup (React + Vite + TypeScript)
-- [ ] Task 11: Frontend API layer + types
-- [ ] Task 12: Frontend TopBar component
-- [ ] Task 13: Frontend Sidebar component
-- [ ] Task 14: Frontend TimetableGrid component
-- [ ] Task 15: Frontend ImportDialog component
-- [ ] Task 16: Frontend App wiring
+- [x] Task 9: Export service (Excel + PDF) (implemented; runtime export check pending DB data)
+- [x] Task 10: Frontend setup (React + Vite + TypeScript)
+- [x] Task 11: Frontend API layer + types
+- [x] Task 12: Frontend TopBar component
+- [x] Task 13: Frontend Sidebar component
+- [x] Task 14: Frontend TimetableGrid component
+- [x] Task 15: Frontend ImportDialog component
+- [x] Task 16: Frontend App wiring
 
 ---
 

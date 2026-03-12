@@ -47,3 +47,37 @@
 2. Import `export_file/import.xml` through API.
 3. Implement export service (Task 9).
 4. Move to frontend tasks (10+).
+
+---
+
+## Update (2026-03-12, continuation)
+
+### Completed in this pass
+
+1. Export backend (Task 9):
+- Added XLSX generation service: `backend/app/services/export_service.py`
+- Added PDF HTML generation and WeasyPrint render path
+- Added export routes for class/teacher/room: `backend/app/routers/export.py`
+- Registered export router in `backend/app/main.py`
+
+2. Frontend MVP UI (Task 10-16):
+- Initialized Vite React+TS app in `frontend/`
+- Added API client and shared types (`frontend/src/api`, `frontend/src/types`)
+- Added components: `TopBar`, `Sidebar`, `TimetableGrid`, `ImportDialog`
+- Wired full screen app in `frontend/src/App.tsx`
+- Added visual theme and responsive layout in `frontend/src/App.css` and `frontend/src/index.css`
+- Configured Vite proxy to backend in `frontend/vite.config.ts`
+
+### Verification
+
+- Frontend production build: `npm run build` — passed
+- Backend parser tests: `9 passed`
+- Backend compile check: passed
+
+### Remaining runtime checks
+
+- Requires running local PostgreSQL container and online migration/import checks.
+- Requires manual UI smoke test against running backend + DB:
+  - import XML,
+  - open timetable for entity,
+  - export XLSX/PDF.
