@@ -226,3 +226,35 @@ Result: Task 9 fully validated in runtime (both formats).
   - admin -> `/api/users` => `200`
   - admin -> `/api/audit?limit=5` => `200`
 - Frontend: `npm run build` -> passed
+
+---
+
+## Phase 3 Start (2026-03-13)
+
+### Delivered
+
+- Added new public read-only router: `backend/app/routers/public.py`.
+- Registered in FastAPI app (`/api/public/*`) with no JWT requirement.
+- Added endpoints:
+  - `GET /api/public/classes`
+  - `GET /api/public/teachers`
+  - `GET /api/public/rooms`
+  - `GET /api/public/timetable/class/{id}?day=...`
+  - `GET /api/public/timetable/teacher/{id}?day=...`
+  - `GET /api/public/timetable/room/{id}?day=...`
+  - `GET /api/public/teacher/{id}/now`
+  - `GET /api/public/rooms/free?day=...&period=...`
+- Added helper tests:
+  - `backend/tests/test_public_api.py`
+  - `backend/tests/test_free_rooms.py`
+
+### Validation
+
+- `pytest tests/test_public_api.py tests/test_free_rooms.py tests/test_security.py tests/test_asc_xml_parser.py` -> `19 passed`
+- Public API smoke (no auth):
+  - `/api/public/classes` -> `200`
+  - `/api/public/teachers` -> `200`
+  - `/api/public/rooms` -> `200`
+  - `/api/public/timetable/*` -> `200`
+  - `/api/public/rooms/free` -> `200`
+  - `/api/public/teacher/{id}/now` -> `200`
