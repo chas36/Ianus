@@ -17,3 +17,6 @@ dist/
 
 # Database
 pgdata/
+
+# School data exports (sensitive)
+export_file/
