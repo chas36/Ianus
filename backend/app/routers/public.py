@@ -6,22 +6,31 @@ external systems (e.g. school's unified backend).
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Card, Room, SchoolClass, Teacher
+from app.middleware.api_key import require_api_key
+from app.models import ApiKey, Card, Room, RoomBooking, SchoolClass, Teacher
 from app.routers.timetable import (
     PERIOD_TIMES,
     timetable_by_class,
     timetable_by_room,
     timetable_by_teacher,
 )
-from app.schemas import ClassOut, RoomOut, TeacherOut, TimetableResponse
+from app.schemas import (
+    ClassOut,
+    RoomBookingCreateRequest,
+    RoomBookingOut,
+    RoomOut,
+    TeacherOut,
+    TimetableResponse,
+)
+from app.services.audit import log_action
 
 router = APIRouter(prefix="/api/public", tags=["public"])
 
@@ -94,6 +103,25 @@ def _find_free_rooms_from_timetables(
     busy_room_ids: set[int],
 ) -> list[dict[str, Any]]:
     return [room for room in all_rooms if room["id"] not in busy_room_ids]
+
+
+def _weekday_for_date(value: date) -> int:
+    weekday = value.isoweekday()
+    return weekday if weekday <= 5 else 0
+
+
+def _resolve_day_query(day: int, booking_date: date | None) -> int:
+    if booking_date is not None:
+        date_day = _weekday_for_date(booking_date)
+        if date_day == 0:
+            return 0
+        if day not in (0, date_day):
+            raise HTTPException(status_code=400, detail="day does not match date")
+        return date_day
+
+    if day == 0:
+        return _get_today_weekday()
+    return day
 
 
 @router.get("/classes", response_model=list[ClassOut])
@@ -221,15 +249,23 @@ async def public_teacher_now(
 async def public_free_rooms(
     day: int = Query(default=0, ge=0, le=5, description="1=Пн..5=Пт, 0=сегодня"),
     period: int = Query(default=0, ge=0, le=10, description="1-10, 0=текущий"),
+    booking_date: date | None = Query(default=None, alias="date"),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
+    now = datetime.now(MSK)
+    requested_day = day
+    day = _resolve_day_query(day, booking_date)
+    target_date = booking_date or (now.date() if requested_day == 0 else None)
+
     if day == 0:
-        day = _get_today_weekday()
-        if day == 0:
-            return {"day": 0, "message": "Сегодня выходной", "free_rooms": []}
+        return {"day": 0, "message": "Сегодня выходной", "free_rooms": []}
 
     if period == 0:
-        now = datetime.now(MSK)
+        if target_date is not None and target_date != now.date():
+            raise HTTPException(
+                status_code=400,
+                detail="period=0 is supported only for current date",
+            )
         period = _get_current_period(now.strftime("%H:%M"))
         if period == 0:
             return {
@@ -250,6 +286,18 @@ async def public_free_rooms(
         )
     )
     busy_room_ids = {row[0] for row in busy_result.all()}
+    booked_room_ids: set[int] = set()
+
+    if target_date is not None:
+        booked_result = await db.execute(
+            select(RoomBooking.room_id).where(
+                RoomBooking.day == day,
+                RoomBooking.period == period,
+                RoomBooking.date == target_date,
+            )
+        )
+        booked_room_ids = {row[0] for row in booked_result.all()}
+        busy_room_ids |= booked_room_ids
 
     free_rooms = _find_free_rooms_from_timetables(all_rooms, busy_room_ids)
 
@@ -258,7 +306,108 @@ async def public_free_rooms(
         "day_name": DAY_NAMES[day],
         "period": period,
         "time": PERIOD_TIMES.get(period, ""),
+        "date": target_date.isoformat() if target_date else None,
         "free_rooms": free_rooms,
         "total_rooms": len(all_rooms),
         "busy_rooms": len(busy_room_ids),
+        "booked_rooms": len(booked_room_ids),
     }
+
+
+@router.post(
+    "/rooms/{room_id}/book",
+    response_model=RoomBookingOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def public_book_room(
+    room_id: int,
+    payload: RoomBookingCreateRequest,
+    db: AsyncSession = Depends(get_db),
+    api_key: ApiKey = Depends(require_api_key),
+) -> RoomBooking:
+    room = await db.get(Room, room_id)
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    if payload.date.isoweekday() != payload.day:
+        raise HTTPException(status_code=400, detail="day does not match date")
+
+    card_exists = await db.scalar(
+        select(Card.id)
+        .where(
+            Card.room_id == room_id,
+            Card.day == payload.day,
+            Card.period == payload.period,
+        )
+        .limit(1)
+    )
+    if card_exists is not None:
+        raise HTTPException(status_code=409, detail="Room is busy in timetable")
+
+    booking_exists = await db.scalar(
+        select(RoomBooking.id)
+        .where(
+            RoomBooking.room_id == room_id,
+            RoomBooking.day == payload.day,
+            RoomBooking.period == payload.period,
+            RoomBooking.date == payload.date,
+        )
+        .limit(1)
+    )
+    if booking_exists is not None:
+        raise HTTPException(status_code=409, detail="Room is already booked")
+
+    booking = RoomBooking(
+        room_id=room_id,
+        day=payload.day,
+        period=payload.period,
+        date=payload.date,
+        booked_by=payload.booked_by.strip(),
+        purpose=payload.purpose.strip() if payload.purpose else None,
+    )
+    db.add(booking)
+    await db.flush()
+
+    await log_action(
+        db,
+        "book_room",
+        detail=(
+            f"API key {api_key.name} booked room {room.name} "
+            f"for {payload.date.isoformat()} period {payload.period}"
+        ),
+    )
+    await db.commit()
+    await db.refresh(booking)
+    return booking
+
+
+@router.delete(
+    "/rooms/{room_id}/book/{booking_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+)
+async def public_cancel_room_booking(
+    room_id: int,
+    booking_id: int,
+    db: AsyncSession = Depends(get_db),
+    api_key: ApiKey = Depends(require_api_key),
+) -> Response:
+    room = await db.get(Room, room_id)
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    booking = await db.get(RoomBooking, booking_id)
+    if booking is None or booking.room_id != room_id:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    await db.delete(booking)
+    await log_action(
+        db,
+        "cancel_room_booking",
+        detail=(
+            f"API key {api_key.name} canceled booking {booking.id} "
+            f"for room {room.name}"
+        ),
+    )
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

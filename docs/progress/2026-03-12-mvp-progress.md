@@ -258,3 +258,43 @@ Result: Task 9 fully validated in runtime (both formats).
   - `/api/public/timetable/*` -> `200`
   - `/api/public/rooms/free` -> `200`
   - `/api/public/teacher/{id}/now` -> `200`
+
+---
+
+## Phase 3 Continuation: API Keys + Room Booking (2026-03-13)
+
+### Delivered
+
+- Added `api_keys` admin router: `backend/app/routers/api_keys.py`
+  - `GET /api/api-keys` (admin-only)
+  - `POST /api/api-keys` (admin-only)
+  - `DELETE /api/api-keys/{id}` (admin-only, soft deactivate)
+- Added API key auth middleware:
+  - `backend/app/middleware/api_key.py` (`X-API-Key`)
+- Added `ApiKey` model + migration:
+  - `backend/app/models.py`
+  - `backend/alembic/versions/20260313_0004_add_api_keys_table.py`
+- Added room booking model + migration:
+  - `backend/app/models.py` (`RoomBooking`)
+  - `backend/alembic/versions/20260313_0005_add_room_bookings_table.py`
+- Extended public API:
+  - `POST /api/public/rooms/{id}/book` (requires API key)
+  - `DELETE /api/public/rooms/{id}/book/{booking_id}` (requires API key)
+  - `GET /api/public/rooms/free?...&date=YYYY-MM-DD` now accounts for bookings on that date
+- Added tests:
+  - `backend/tests/test_api_key_middleware.py`
+  - `backend/tests/test_public_day_resolution.py`
+
+### Validation
+
+- `python -m compileall backend/app` -> passed
+- `pytest` -> `25 passed`
+- `alembic upgrade head` -> applied `20260313_0005`
+- Runtime smoke:
+  - teacher -> `GET /api/api-keys` => `403`
+  - admin -> `POST /api/api-keys` => `201`
+  - public booking without `X-API-Key` => `401`
+  - public booking with `X-API-Key` => `201`
+  - public booking cancel with `X-API-Key` => `204`
+  - admin key deactivate => `204`
+  - audit contains: `create_api_key`, `book_room`, `cancel_room_booking`, `deactivate_api_key`

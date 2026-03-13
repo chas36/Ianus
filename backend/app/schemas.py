@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
@@ -120,6 +120,41 @@ class AuditLogOut(BaseModel):
     username: str
     action: str
     detail: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ApiKeyOut(BaseModel):
+    id: int
+    key: str
+    name: str
+    is_active: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ApiKeyCreateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+
+
+class RoomBookingCreateRequest(BaseModel):
+    day: int = Field(ge=1, le=5)
+    period: int = Field(ge=1, le=10)
+    date: date
+    booked_by: str = Field(min_length=1, max_length=120)
+    purpose: str | None = Field(default=None, max_length=255)
+
+
+class RoomBookingOut(BaseModel):
+    id: int
+    room_id: int
+    day: int
+    period: int
+    date: date
+    booked_by: str
+    purpose: str | None
     created_at: datetime
 
     model_config = {"from_attributes": True}

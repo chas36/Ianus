@@ -14,9 +14,9 @@
 
 - [x] Task 1: Public timetable API (lists + by-day endpoints + teacher-now)
 - [x] Task 2: Free rooms endpoint (`/api/public/rooms/free`)
-- [ ] Task 3: API key model + middleware
-- [ ] Task 4: Room booking model + endpoints
-- [ ] Task 5: API keys admin endpoints
+- [x] Task 3: API key model + middleware
+- [x] Task 4: Room booking model + endpoints
+- [x] Task 5: API keys admin endpoints
 - [ ] Task 6: Bot skeleton (aiogram 3)
 - [ ] Task 7: Bot registration flow
 - [ ] Task 8: Bot schedule commands

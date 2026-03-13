@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import secrets
+from datetime import date
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, func
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -47,6 +49,23 @@ class AuditLog(Base):
     )
 
 
+class ApiKey(Base):
+    __tablename__ = "api_keys"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    @staticmethod
+    def generate_key() -> str:
+        return secrets.token_urlsafe(32)
+
+
 class Subject(Base):
     __tablename__ = "subjects"
 
@@ -82,6 +101,23 @@ class Room(Base):
     asc_id: Mapped[str] = mapped_column(String(20), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(100))
     short_name: Mapped[str] = mapped_column(String(100))
+
+
+class RoomBooking(Base):
+    __tablename__ = "room_bookings"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    room_id: Mapped[int] = mapped_column(ForeignKey("rooms.id"))
+    day: Mapped[int] = mapped_column(Integer)
+    period: Mapped[int] = mapped_column(Integer)
+    date: Mapped[date] = mapped_column(Date)
+    booked_by: Mapped[str] = mapped_column(String(120))
+    purpose: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    room: Mapped[Room] = relationship()
 
 
 class Lesson(Base):

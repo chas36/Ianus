@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import audit, auth, export, import_router, public, timetable, users
+from app.routers import api_keys, audit, auth, export, import_router, public, timetable, users
 
 app = FastAPI(title="Ianus", version="0.1.0")
 
@@ -18,6 +18,7 @@ app.include_router(export.router)
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(audit.router)
+app.include_router(api_keys.router)
 app.include_router(public.router)
 
 
