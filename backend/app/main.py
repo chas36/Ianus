@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auth, export, import_router, timetable
+from app.routers import audit, auth, export, import_router, timetable, users
 
 app = FastAPI(title="Ianus", version="0.1.0")
 
@@ -16,6 +16,8 @@ app.include_router(import_router.router)
 app.include_router(timetable.router)
 app.include_router(export.router)
 app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(audit.router)
 
 
 @app.get("/api/health")

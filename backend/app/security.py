@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from collections.abc import Callable
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -89,3 +90,19 @@ async def get_current_user(
         )
 
     return user
+
+
+def require_role(*allowed_roles: str) -> Callable[[User], User]:
+    """FastAPI dependency factory that checks authenticated user's role."""
+    if not allowed_roles:
+        raise ValueError("At least one role must be provided")
+
+    def checker(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions",
+            )
+        return current_user
+
+    return checker

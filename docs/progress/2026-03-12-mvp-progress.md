@@ -190,3 +190,39 @@ Result: Task 9 fully validated in runtime (both formats).
   - `pytest tests/test_asc_xml_parser.py` -> `9 passed`
 - Frontend check:
   - `npm run build` passed
+
+---
+
+## Phase 2 Completion (2026-03-13)
+
+### Delivered
+
+- RBAC dependency `require_role(*roles)` added in backend security layer.
+- Import endpoint switched to admin-only access.
+- Added admin-only user management API (`/api/users`): list/create/update.
+- Added `audit_log` table and migration `20260313_0003_add_audit_log_table`.
+- Added audit service `log_action` and wired it into:
+  - auth login,
+  - import,
+  - export,
+  - user create/update.
+- Added admin-only audit API endpoint (`/api/audit`).
+- Frontend role-aware UI:
+  - TopBar hides admin actions for teacher role,
+  - added admin `UsersPanel`,
+  - added admin `AuditPanel`.
+
+### Validation
+
+- `pytest tests/test_asc_xml_parser.py tests/test_security.py` -> `13 passed`
+- `python -m compileall backend/app` -> passed
+- `alembic upgrade head` -> applied `20260313_0003`
+- Role smoke:
+  - teacher -> `/api/import/asc-xml` => `403`
+  - teacher -> `/api/users` => `403`
+  - teacher -> `/api/audit` => `403`
+  - teacher -> `/api/classes` => `200`
+  - teacher -> `/api/export/class/{id}` => `200`
+  - admin -> `/api/users` => `200`
+  - admin -> `/api/audit?limit=5` => `200`
+- Frontend: `npm run build` -> passed

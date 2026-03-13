@@ -14,11 +14,13 @@ import {
   login,
   setStoredToken,
 } from './api'
+import AuditPanel from './components/AuditPanel'
 import AuthPanel from './components/AuthPanel'
 import ImportDialog from './components/ImportDialog'
 import Sidebar from './components/Sidebar'
 import TimetableGrid from './components/TimetableGrid'
 import TopBar from './components/TopBar'
+import UsersPanel from './components/UsersPanel'
 import type {
   AuthMeResponse,
   ClassItem,
@@ -48,6 +50,8 @@ export default function App() {
   const [timetable, setTimetable] = useState<TimetableResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [importOpen, setImportOpen] = useState(false)
+  const [usersOpen, setUsersOpen] = useState(false)
+  const [auditOpen, setAuditOpen] = useState(false)
 
   const [authLoading, setAuthLoading] = useState(true)
   const [authError, setAuthError] = useState<string | null>(null)
@@ -179,6 +183,9 @@ export default function App() {
     setRooms([])
     setSelectedId(null)
     setTimetable(null)
+    setImportOpen(false)
+    setUsersOpen(false)
+    setAuditOpen(false)
   }
 
   const handleExport = async (format: 'xlsx' | 'pdf') => {
@@ -255,9 +262,12 @@ export default function App() {
         mode={mode}
         selectedId={selectedId}
         currentUsername={`${currentUser.username} (${currentUser.role})`}
+        role={currentUser.role}
         onModeChange={setMode}
         onImportClick={() => setImportOpen(true)}
         onExport={(format) => void handleExport(format)}
+        onUsersClick={() => setUsersOpen(true)}
+        onAuditClick={() => setAuditOpen(true)}
         onLogout={handleLogout}
       />
 
@@ -298,6 +308,16 @@ export default function App() {
         onSuccess={() => {
           void loadLists()
         }}
+      />
+
+      <UsersPanel
+        open={usersOpen && currentUser.role === 'admin'}
+        onClose={() => setUsersOpen(false)}
+      />
+
+      <AuditPanel
+        open={auditOpen && currentUser.role === 'admin'}
+        onClose={() => setAuditOpen(false)}
       />
     </div>
   )

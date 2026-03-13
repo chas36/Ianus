@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -90,3 +92,34 @@ class AuthMeResponse(BaseModel):
     username: str
     role: str
     is_active: bool
+
+
+class UserOut(BaseModel):
+    id: int
+    username: str
+    role: str
+    is_active: bool
+
+    model_config = {"from_attributes": True}
+
+
+class UserCreateRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=120)
+    password: str = Field(min_length=8, max_length=120)
+    role: str = Field(default="teacher", pattern="^(admin|teacher)$")
+
+
+class UserUpdateRequest(BaseModel):
+    role: str | None = Field(default=None, pattern="^(admin|teacher)$")
+    is_active: bool | None = None
+    password: str | None = Field(default=None, min_length=8, max_length=120)
+
+
+class AuditLogOut(BaseModel):
+    id: int
+    username: str
+    action: str
+    detail: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

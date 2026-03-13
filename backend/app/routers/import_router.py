@@ -5,15 +5,16 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Card, Import, Lesson, Room, SchoolClass, Subject, Teacher
+from app.models import Card, Import, Lesson, Room, SchoolClass, Subject, Teacher, User
 from app.schemas import ImportResponse
-from app.security import get_current_user
+from app.security import get_current_user, require_role
+from app.services.audit import log_action
 from app.services.asc_xml_parser import parse_asc_xml
 
 router = APIRouter(
     prefix="/api/import",
     tags=["import"],
-    dependencies=[Depends(get_current_user)],
+    dependencies=[Depends(require_role("admin"))],
 )
 
 
@@ -21,6 +22,7 @@ router = APIRouter(
 async def import_asc_xml(
     file: UploadFile,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> ImportResponse:
     xml_bytes = await file.read()
     data = parse_asc_xml(xml_bytes)
@@ -176,6 +178,12 @@ async def import_asc_xml(
         cards_count += 1
 
     db.add(Import(filename=file.filename or "unknown", source_format="asc-xml"))
+    await log_action(
+        db,
+        "import",
+        detail=f"Imported {file.filename}: {len(data['subjects'])} subjects, {cards_count} cards",
+        user=current_user,
+    )
     await db.commit()
 
     return ImportResponse(

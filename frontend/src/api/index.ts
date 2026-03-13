@@ -7,11 +7,14 @@ import type {
   AuthLoginRequest,
   AuthLoginResponse,
   AuthMeResponse,
+  AuditLogItem,
   ClassItem,
   ImportResponse,
   RoomItem,
   TeacherItem,
   TimetableResponse,
+  UserCreateRequest,
+  UserItem,
   ViewMode,
 } from '../types'
 
@@ -100,6 +103,29 @@ export async function exportTimetable(
   const filename = parseFilename(disposition) ?? fallback
 
   return { blob: response.data, filename }
+}
+
+export async function getUsers(): Promise<UserItem[]> {
+  const { data } = await api.get<UserItem[]>('/users')
+  return data
+}
+
+export async function createUser(payload: UserCreateRequest): Promise<UserItem> {
+  const { data } = await api.post<UserItem>('/users', payload)
+  return data
+}
+
+export async function updateUser(
+  id: number,
+  payload: { role?: string; is_active?: boolean; password?: string },
+): Promise<UserItem> {
+  const { data } = await api.patch<UserItem>(`/users/${id}`, payload)
+  return data
+}
+
+export async function getAuditLogs(limit = 50): Promise<AuditLogItem[]> {
+  const { data } = await api.get<AuditLogItem[]>(`/audit?limit=${limit}`)
+  return data
 }
 
 function parseFilename(contentDisposition: string | undefined): string | null {

@@ -9,9 +9,11 @@ from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.models import User
 from app.routers.timetable import timetable_by_class, timetable_by_room, timetable_by_teacher
 from app.schemas import TimetableResponse
 from app.security import get_current_user
+from app.services.audit import log_action
 from app.services.export_service import timetable_to_pdf_html, timetable_to_xlsx
 
 router = APIRouter(
@@ -73,8 +75,16 @@ async def export_class(
     class_id: int,
     format: Literal["xlsx", "pdf"] = Query("xlsx"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> Response:
     tt = await timetable_by_class(class_id, db)
+    await log_action(
+        db,
+        "export",
+        detail=f"Export class {tt.entity_name} as {format}",
+        user=current_user,
+    )
+    await db.commit()
     return await _export(tt, format, f"class_{class_id}")
 
 
@@ -83,8 +93,16 @@ async def export_teacher(
     teacher_id: int,
     format: Literal["xlsx", "pdf"] = Query("xlsx"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> Response:
     tt = await timetable_by_teacher(teacher_id, db)
+    await log_action(
+        db,
+        "export",
+        detail=f"Export teacher {tt.entity_name} as {format}",
+        user=current_user,
+    )
+    await db.commit()
     return await _export(tt, format, f"teacher_{teacher_id}")
 
 
@@ -93,6 +111,14 @@ async def export_room(
     room_id: int,
     format: Literal["xlsx", "pdf"] = Query("xlsx"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> Response:
     tt = await timetable_by_room(room_id, db)
+    await log_action(
+        db,
+        "export",
+        detail=f"Export room {tt.entity_name} as {format}",
+        user=current_user,
+    )
+    await db.commit()
     return await _export(tt, format, f"room_{room_id}")

@@ -77,4 +77,25 @@ export interface AuthMeResponse {
   is_active: boolean
 }
 
+export interface UserItem {
+  id: number
+  username: string
+  role: string
+  is_active: boolean
+}
+
+export interface UserCreateRequest {
+  username: string
+  password: string
+  role: string
+}
+
+export interface AuditLogItem {
+  id: number
+  username: string
+  action: string
+  detail: string | null
+  created_at: string
+}
+
 export type ViewMode = 'class' | 'teacher' | 'room'

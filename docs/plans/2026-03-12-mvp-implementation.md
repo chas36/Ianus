@@ -30,9 +30,9 @@
 ## Phase 2 Extension (Started: 2026-03-12)
 
 - [x] P2.1: JWT auth foundation (users table, bootstrap/login/me, protected API)
-- [ ] P2.2: Role separation (admin/teacher permissions)
-- [ ] P2.3: UI role-aware visibility and actions
-- [ ] P2.4: Audit trail for imports/exports and timetable access
+- [x] P2.2: Role separation (admin/teacher permissions)
+- [x] P2.3: UI role-aware visibility and actions
+- [x] P2.4: Audit trail for imports/exports and timetable access
 
 ---
 

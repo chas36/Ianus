@@ -4,9 +4,12 @@ interface TopBarProps {
   mode: ViewMode
   selectedId: number | null
   currentUsername: string
+  role: string
   onModeChange: (mode: ViewMode) => void
   onImportClick: () => void
   onExport: (format: 'xlsx' | 'pdf') => void
+  onUsersClick?: () => void
+  onAuditClick?: () => void
   onLogout: () => void
 }
 
@@ -20,9 +23,12 @@ export default function TopBar({
   mode,
   selectedId,
   currentUsername,
+  role,
   onModeChange,
   onImportClick,
   onExport,
+  onUsersClick,
+  onAuditClick,
   onLogout,
 }: TopBarProps) {
   return (
@@ -42,9 +48,21 @@ export default function TopBar({
 
       <div className="topbar-actions">
         <span className="topbar-user">{currentUsername}</span>
-        <button type="button" className="btn ghost" onClick={onImportClick}>
-          Импорт XML
-        </button>
+        {role === 'admin' ? (
+          <button type="button" className="btn ghost" onClick={onImportClick}>
+            Импорт XML
+          </button>
+        ) : null}
+        {role === 'admin' && onUsersClick ? (
+          <button type="button" className="btn ghost" onClick={onUsersClick}>
+            Пользователи
+          </button>
+        ) : null}
+        {role === 'admin' && onAuditClick ? (
+          <button type="button" className="btn ghost" onClick={onAuditClick}>
+            Журнал
+          </button>
+        ) : null}
         <button
           type="button"
           className="btn"

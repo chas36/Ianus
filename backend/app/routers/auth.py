@@ -14,6 +14,7 @@ from app.schemas import (
     AuthMeResponse,
 )
 from app.security import authenticate_user, create_access_token, get_current_user, get_password_hash
+from app.services.audit import log_action
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -62,6 +63,8 @@ async def login(
         )
 
     token = create_access_token(subject=user.username)
+    await log_action(db, "login", detail=f"User {user.username} logged in", user=user)
+    await db.commit()
     return AuthLoginResponse(access_token=token, token_type="bearer")
 
 
